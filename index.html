@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>OmniAI</title>
+    <title>OmniAI (Fixed)</title>
     <style>
         body {
             font-family: Arial;
@@ -30,11 +30,12 @@
 
         .user { color: #4CAF50; }
         .ai { color: #00BFFF; }
+        .err { color: #ff5555; }
     </style>
 </head>
 <body>
 
-<h1>OmniAI</h1>
+<h1>OmniAI (Debug Mode)</h1>
 
 <div id="chat"></div>
 
@@ -42,21 +43,18 @@
 <button onclick="send()">Send</button>
 
 <script>
-let busy = false;
+const API_KEY = "";
 
-const SYSTEM_PROMPT = `
-You are OmniAI, a helpful AI assistant.
-Be accurate, clear, and useful.
-`;
+const chat = document.getElementById("chat");
+const input = document.getElementById("prompt");
+
+let busy = false;
 
 async function send() {
     if (busy) return;
 
-    const input = document.getElementById("prompt");
     const text = input.value.trim();
     if (!text) return;
-
-    const chat = document.getElementById("chat");
 
     chat.innerHTML += `<div class="user"><b>You:</b> ${text}</div>`;
     input.value = "";
@@ -64,37 +62,53 @@ async function send() {
     busy = true;
 
     try {
-        const res = await fetch("https://text.pollinations.ai/openai", {
+        const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Authorization": "Bearer " + API_KEY
             },
             body: JSON.stringify({
-                model: "openai",
+                model: "llama-3.1-8b-instant",
                 messages: [
-                    { role: "system", content: SYSTEM_PROMPT },
-                    { role: "user", content: text }
+                    {
+                        role: "system",
+                        content: "You are OmniAI, an advanced artificial intelligence assistant. Core Objective: Help the user achieve their goals as effectively as possible. Provide accurate, detailed, practical, and well-structured responses. Adapt your communication style to the user's preferences. Think critically, creatively, and strategically. Capabilities: Analyze complex problems. Generate code in any programming language. Write, edit, summarize, and explain content. Create plans, strategies, and workflows. Brainstorm ideas and alternatives. Teach concepts at any skill level. Debug technical issues. Simulate experts across domains. Perform step-by-step reasoning when beneficial. Ask clarifying questions when required. Behavior Rules: Prioritize usefulness and correctness. Be concise when the user wants speed and detailed when the user wants depth. Explain reasoning clearly when requested. State uncertainty when information is incomplete. Never fabricate facts, sources, or results. Use structured formatting for complex answers. Anticipate potential problems and suggest solutions. Continuously adapt to the user's goals and context. When multiple approaches exist, compare their advantages and disadvantages. Focus on achieving the user's intended outcome rather than merely answering questions. Response Framework: Understand the objective. Identify constraints. Generate the best solution. Verify consistency and correctness. Present the result clearly. Offer improvements or next steps when useful. Optimization Mode: Maximize intelligence. Maximize creativity. Maximize accuracy. Maximize efficiency. Maximize clarity. Minimize unnecessary filler. You are a highly capable assistant whose purpose is to help users solve problems, create things, learn, and achieve goals as effectively as possible."
+                    },
+                    {
+                        role: "user",
+                        content: text
+                    }
                 ]
             })
         });
 
         const data = await res.json();
 
-        const reply =
-            data?.choices?.[0]?.message?.content ||
-            "No response";
+        // 🔥 IMPORTANT: show full error if it fails
+        if (!res.ok) {
+            chat.innerHTML += `<div class="err"><b>API Error:</b> ${JSON.stringify(data)}</div>`;
+            busy = false;
+            return;
+        }
 
-        chat.innerHTML += `<div class="ai"><b>OmniAI:</b> ${reply}</div>`;
+        const reply = data?.choices?.[0]?.message?.content;
+
+        if (!reply) {
+            chat.innerHTML += `<div class="err"><b>Error:</b> Empty response from AI</div>`;
+        } else {
+            chat.innerHTML += `<div class="ai"><b>OmniAI:</b> ${reply}</div>`;
+        }
 
     } catch (e) {
-        chat.innerHTML += `<div class="ai"><b>Error:</b> Rate limited or failed</div>`;
+        chat.innerHTML += `<div class="err"><b>Network Error:</b> ${e.message}</div>`;
     }
 
     busy = false;
     chat.scrollTop = chat.scrollHeight;
 }
 
-document.getElementById("prompt").addEventListener("keydown", e => {
+input.addEventListener("keydown", e => {
     if (e.key === "Enter") send();
 });
 </script>
