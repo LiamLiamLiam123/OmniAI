@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OmniAI</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #111;
+            color: white;
+            max-width: 900px;
+            margin: 20px auto;
+        }
+
+        #chat {
+            height: 500px;
+            overflow-y: auto;
+            border: 1px solid #444;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        input {
+            width: 80%;
+            padding: 10px;
+        }
+
+        button {
+            padding: 10px;
+        }
+
+        .user { color: #4CAF50; }
+        .ai { color: #00BFFF; }
+    </style>
+</head>
+<body>
+
+<h1>OmniAI</h1>
+
+<div id="chat"></div>
+
+<input id="prompt" placeholder="Ask OmniAI...">
+<button onclick="send()">Send</button>
+
+<script>
+let busy = false;
+
+const SYSTEM_PROMPT = `
+You are OmniAI, a helpful AI assistant.
+Be accurate, clear, and useful.
+`;
+
+async function send() {
+    if (busy) return;
+
+    const input = document.getElementById("prompt");
+    const text = input.value.trim();
+    if (!text) return;
+
+    const chat = document.getElementById("chat");
+
+    chat.innerHTML += `<div class="user"><b>You:</b> ${text}</div>`;
+    input.value = "";
+
+    busy = true;
+
+    try {
+        const res = await fetch("https://text.pollinations.ai/openai", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                model: "openai",
+                messages: [
+                    { role: "system", content: SYSTEM_PROMPT },
+                    { role: "user", content: text }
+                ]
+            })
+        });
+
+        const data = await res.json();
+
+        const reply =
+            data?.choices?.[0]?.message?.content ||
+            "No response";
+
+        chat.innerHTML += `<div class="ai"><b>OmniAI:</b> ${reply}</div>`;
+
+    } catch (e) {
+        chat.innerHTML += `<div class="ai"><b>Error:</b> Rate limited or failed</div>`;
+    }
+
+    busy = false;
+    chat.scrollTop = chat.scrollHeight;
+}
+
+document.getElementById("prompt").addEventListener("keydown", e => {
+    if (e.key === "Enter") send();
+});
+</script>
+
+</body>
+</html>
