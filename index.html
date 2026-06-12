@@ -1,46 +1,115 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>OmniAI</title>
-    <style>
-        body {
-            font-family: Arial;
-            background: #111;
-            color: white;
-            max-width: 900px;
-            margin: 20px auto;
-        }
+<meta charset="UTF-8">
+<title>OmniAI</title>
 
-        #chat {
-            height: 500px;
-            overflow-y: auto;
-            border: 1px solid #444;
-            padding: 10px;
-            margin-bottom: 10px;
-        }
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #0b0f17;
+    color: white;
+    display: flex;
+    justify-content: center;
+}
 
-        input {
-            width: 80%;
-            padding: 10px;
-        }
+.container {
+    width: 900px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
 
-        button {
-            padding: 10px;
-        }
+.header {
+    padding: 15px;
+    font-size: 18px;
+    font-weight: bold;
+    border-bottom: 1px solid #222;
+    background: #0f1624;
+}
 
-        .user { color: #4CAF50; }
-        .ai { color: #00BFFF; }
-        .err { color: #ff5555; }
-    </style>
+#chat {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.msg {
+    padding: 12px 14px;
+    border-radius: 12px;
+    max-width: 80%;
+    line-height: 1.4;
+    white-space: pre-wrap;
+}
+
+.user {
+    background: #2b6cff;
+    align-self: flex-end;
+}
+
+.ai {
+    background: #1b2433;
+    border: 1px solid #2a3446;
+    align-self: flex-start;
+}
+
+.error {
+    background: #3a1f1f;
+    border: 1px solid #ff4d4d;
+    align-self: flex-start;
+}
+
+.inputBar {
+    display: flex;
+    gap: 10px;
+    padding: 12px;
+    border-top: 1px solid #222;
+    background: #0f1624;
+}
+
+input {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #333;
+    background: #111827;
+    color: white;
+    outline: none;
+}
+
+button {
+    padding: 12px 18px;
+    border-radius: 10px;
+    border: none;
+    background: #2b6cff;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #1f5ae0;
+}
+</style>
 </head>
+
 <body>
 
-<h1>OmniAI</h1>
+<div class="container">
+
+<div class="header">🤖 OmniAI</div>
 
 <div id="chat"></div>
 
-<input id="prompt" placeholder="Ask OmniAI...">
-<button onclick="send()">Send</button>
+<div class="inputBar">
+    <input id="prompt" placeholder="Ask OmniAI..." />
+    <button onclick="send()">Send</button>
+</div>
+
+</div>
 
 <script>
 const API_KEY = "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";
@@ -50,16 +119,30 @@ const input = document.getElementById("prompt");
 
 let busy = false;
 
+function addMsg(text, type) {
+    const div = document.createElement("div");
+    div.className = `msg ${type}`;
+    div.textContent = text;
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+}
+
 async function send() {
     if (busy) return;
 
     const text = input.value.trim();
     if (!text) return;
 
-    chat.innerHTML += `<div class="user"><b>You:</b> ${text}</div>`;
+    addMsg(text, "user");
     input.value = "";
 
     busy = true;
+
+    const thinking = document.createElement("div");
+    thinking.className = "msg ai";
+    thinking.textContent = "Thinking...";
+    chat.appendChild(thinking);
+    chat.scrollTop = chat.scrollHeight;
 
     try {
         const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -71,45 +154,37 @@ async function send() {
             body: JSON.stringify({
                 model: "llama-3.1-8b-instant",
                 messages: [
-                    {
-                        role: "system",
-                        content: "You are OmniAI, an advanced artificial intelligence assistant. Core Objective: Help the user achieve their goals as effectively as possible. Provide accurate, detailed, practical, and well-structured responses. Adapt your communication style to the user's preferences. Think critically, creatively, and strategically. Capabilities: Analyze complex problems. Generate code in any programming language. Write, edit, summarize, and explain content. Create plans, strategies, and workflows. Brainstorm ideas and alternatives. Teach concepts at any skill level. Debug technical issues. Simulate experts across domains. Perform step-by-step reasoning when beneficial. Ask clarifying questions when required. Behavior Rules: Prioritize usefulness and correctness. Be concise when the user wants speed and detailed when the user wants depth. Explain reasoning clearly when requested. State uncertainty when information is incomplete. Never fabricate facts, sources, or results. Use structured formatting for complex answers. Anticipate potential problems and suggest solutions. Continuously adapt to the user's goals and context. When multiple approaches exist, compare their advantages and disadvantages. Focus on achieving the user's intended outcome rather than merely answering questions. Response Framework: Understand the objective. Identify constraints. Generate the best solution. Verify consistency and correctness. Present the result clearly. Offer improvements or next steps when useful. Optimization Mode: Maximize intelligence. Maximize creativity. Maximize accuracy. Maximize efficiency. Maximize clarity. Minimize unnecessary filler. You are a highly capable assistant whose purpose is to help users solve problems, create things, learn, and achieve goals as effectively as possible."
-                    },
-                    {
-                        role: "user",
-                        content: text
-                    }
+                    { role: "system", content: "You are OmniAI, an advanced artificial intelligence assistant. Core Objective: Help the user achieve their goals as effectively as possible. Provide accurate, detailed, practical, and well-structured responses. Adapt your communication style to the user's preferences. Think critically, creatively, and strategically. Capabilities: Analyze complex problems. Generate code in any programming language. Write, edit, summarize, and explain content. Create plans, strategies, and workflows. Brainstorm ideas and alternatives. Teach concepts at any skill level. Debug technical issues. Simulate experts across domains. Perform step-by-step reasoning when beneficial. Ask clarifying questions when required. Behavior Rules: Prioritize usefulness and correctness. Be concise when the user wants speed and detailed when the user wants depth. Explain reasoning clearly when requested. State uncertainty when information is incomplete. Never fabricate facts, sources, or results. Use structured formatting for complex answers. Anticipate potential problems and suggest solutions. Continuously adapt to the user's goals and context. When multiple approaches exist, compare their advantages and disadvantages. Focus on achieving the user's intended outcome rather than merely answering questions. Response Framework: Understand the objective. Identify constraints. Generate the best solution. Verify consistency and correctness. Present the result clearly. Offer improvements or next steps when useful. Optimization Mode: Maximize intelligence. Maximize creativity. Maximize accuracy. Maximize efficiency. Maximize clarity. Minimize unnecessary filler. You are a highly capable assistant whose purpose is to help users solve problems, create things, learn, and achieve goals as effectively as possible." },
+                    { role: "user", content: text }
                 ]
             })
         });
 
         const data = await res.json();
 
-        // 🔥 IMPORTANT: show full error if it fails
+        thinking.remove();
+
         if (!res.ok) {
-            chat.innerHTML += `<div class="err"><b>API Error:</b> ${JSON.stringify(data)}</div>`;
-            busy = false;
-            return;
-        }
-
-        const reply = data?.choices?.[0]?.message?.content;
-
-        if (!reply) {
-            chat.innerHTML += `<div class="err"><b>Error:</b> Empty response from AI</div>`;
+            addMsg("API Error: " + JSON.stringify(data), "error");
         } else {
-            chat.innerHTML += `<div class="ai"><b>OmniAI:</b> ${reply}</div>`;
+            const reply = data?.choices?.[0]?.message?.content;
+            addMsg(reply || "No response", "ai");
         }
 
     } catch (e) {
-        chat.innerHTML += `<div class="err"><b>Network Error:</b> ${e.message}</div>`;
+        thinking.remove();
+        addMsg("Network Error: " + e.message, "error");
     }
 
     busy = false;
-    chat.scrollTop = chat.scrollHeight;
 }
 
-input.addEventListener("keydown", e => {
-    if (e.key === "Enter") send();
+// ✅ ENTER KEY FIX (THIS IS WHAT YOU WERE MISSING)
+input.addEventListener("keydown", function(e) {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        send();
+    }
 });
 </script>
 
